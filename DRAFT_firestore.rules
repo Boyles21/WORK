@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isValidId(id) { 
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isAllowedUserId(uid) {
+      return uid is string && uid.size() >= 1 && uid.size() <= 64 && (
+        uid == 'ayoola-private' ||
+        uid == 'aunty-mercy-private' ||
+        uid == 'rhoda-private' ||
+        uid == 'yessica-private' ||
+        uid == 'ammie-private' ||
+        uid == 'glory-private' ||
+        uid == 'elizabeth-private'
+      );
+    }
+
+    // Validation Blueprints
+    function isValidPolaroid(data) {
+      return data.keys().hasAll(['id', 'url', 'compliment', 'date', 'userId', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'url', 'compliment', 'date', 'userId', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+             data.url is string && data.url.size() >= 1 && data.url.size() <= 1000000 &&
+             data.compliment is string && data.compliment.size() >= 1 && data.compliment.size() <= 2000 &&
+             data.date is string && data.date.size() >= 1 && data.date.size() <= 64 &&
+             isAllowedUserId(data.userId) &&
+             data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    function isValidDailyMessage(data) {
+      return data.keys().hasAll(['message', 'dateString', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['message', 'dateString', 'createdAt', 'updatedAt']) &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 5000 &&
+             data.dateString is string && data.dateString.size() >= 1 && data.dateString.size() <= 64 &&
+             data.createdAt is timestamp &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidThought(data) {
+      return data.keys().hasAll(['text', 'userId', 'createdAt']) &&
+             data.keys().hasOnly(['text', 'userId', 'createdAt']) &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 10000 &&
+             isAllowedUserId(data.userId) &&
+             data.createdAt == request.time;
+    }
+
+    // 0. Connection Test
+    match /test/{testId} {
+      allow get: if isValidId(testId);
+    }
+
+    // 1. Polaroids
+    match /polaroids/{polaroidId} {
+      allow get: if isValidId(polaroidId) && (resource == null || isAllowedUserId(existing().userId));
+      allow list: if isAllowedUserId(existing().userId);
+      allow create: if isValidId(polaroidId) &&
+                       isValidPolaroid(incoming()) &&
+                       incoming().id == polaroidId &&
+                       incoming().createdAt == request.time;
+      allow update: if isValidId(polaroidId) && 
+                       isValidPolaroid(incoming()) &&
+                       incoming().id == existing().id &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['compliment', 'updatedAt']);
+      allow delete: if isValidId(polaroidId) && isAllowedUserId(existing().userId);
+    }
+
+    // 2. Daily Messages
+    match /daily_messages/{dateId} {
+      allow get: if isValidId(dateId);
+      allow list: if isValidId(existing().dateString);
+      allow create: if isValidId(dateId) &&
+                       isValidDailyMessage(incoming()) &&
+                       incoming().dateString == dateId &&
+                       incoming().createdAt == request.time;
+      allow update: if isValidId(dateId) && 
+                       isValidDailyMessage(incoming()) &&
+                       incoming().dateString == dateId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['message', 'updatedAt', 'createdAt', 'dateString']);
+    }
+
+    // 3. Thoughts
+    match /thoughts/{thoughtId} {
+      allow get: if isValidId(thoughtId) && (resource == null || isAllowedUserId(existing().userId));
+      allow list: if isAllowedUserId(existing().userId);
+      allow create: if isValidId(thoughtId) && isValidThought(incoming());
+      allow delete: if isValidId(thoughtId) && isAllowedUserId(existing().userId);
+    }
+  }
+}

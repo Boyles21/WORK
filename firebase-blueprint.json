@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Polaroid": {
+      "title": "Polaroid Memory",
+      "description": "A captured memory with a compliment and date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "url": { "type": "string", "minLength": 1, "maxLength": 1000000, "description": "Base64 image data" },
+        "compliment": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "date": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 64, "description": "The private identifier, e.g., 'aunty-mercy-private'" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "url", "compliment", "date", "userId", "createdAt"]
+    },
+    "DailyMessage": {
+      "title": "Daily Message",
+      "description": "The special message generated for a specific day",
+      "type": "object",
+      "properties": {
+        "message": { "type": "string", "minLength": 1, "maxLength": 5000 },
+        "dateString": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["message", "dateString", "createdAt", "updatedAt"]
+    },
+    "Thought": {
+      "title": "Thought",
+      "description": "A private thought or gratitude note saved by the user",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 10000 },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "polaroids": {
+      "schema": "Polaroid",
+      "description": "Collection of polaroid memories"
+    },
+    "daily_messages": {
+      "schema": "DailyMessage",
+      "description": "Shared daily messages stored by date"
+    },
+    "thoughts": {
+      "schema": "Thought",
+      "description": "Private thoughts and gratitude entries saved by the user"
+    }
+  }
+}

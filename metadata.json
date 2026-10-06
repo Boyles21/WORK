@@ -1,0 +1,10 @@
+{
+  "name": "Ayomide",
+  "description": "A soft, personal, emotionally intelligent space for Ammie, featuring daily messages, mood checks, and AI-powered compliments.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
